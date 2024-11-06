@@ -6,6 +6,9 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+Dotenv::Railtie.load if defined?(Dotenv)
+
+
 module ChalkhouseDb
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -13,6 +16,7 @@ module ChalkhouseDb
 
     # Configuration for the application, engines, and railties goes here.
     #
+
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #

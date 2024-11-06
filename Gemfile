@@ -1,9 +1,15 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.3.5"
+# ruby "3.3.5"
 gem 'twilio-ruby'
 gem 'httparty'
+gem 'active_model_serializers', '~> 0.10.0'
+gem 'dotenv-rails', groups: [:development, :test]
+gem 'json', '~> 2.5'
+
+
+
 
 
 

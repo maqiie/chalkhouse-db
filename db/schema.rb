@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_03_194027) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_06_082037) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -28,8 +28,11 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_03_194027) do
 
   create_table "challenges", force: :cascade do |t|
     t.string "player"
+    t.string "phone"
     t.string "game"
-    t.decimal "prize"
+    t.decimal "price"
+    t.boolean "accepted"
+    t.datetime "expiration_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -38,6 +41,21 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_03_194027) do
     t.string "name"
     t.string "type"
     t.boolean "is_available"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "tournaments", force: :cascade do |t|
+    t.string "title"
+    t.text "description"
+    t.datetime "deadline"
+    t.integer "max_players"
+    t.integer "registered_players_count"
+    t.decimal "registration_fee"
+    t.decimal "prize"
+    t.string "first_place"
+    t.string "second_place"
+    t.string "third_place"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

@@ -2,10 +2,16 @@
 
 one:
   player: MyString
+  phone: MyString
   game: MyString
-  prize: 9.99
+  price: 9.99
+  accepted: false
+  expiration_time: 2024-11-06 11:20:37
 
 two:
   player: MyString
+  phone: MyString
   game: MyString
-  prize: 9.99
+  price: 9.99
+  accepted: false
+  expiration_time: 2024-11-06 11:20:37

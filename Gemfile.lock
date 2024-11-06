@@ -46,6 +46,11 @@ GEM
       erubi (~> 1.4)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.1, >= 1.2.0)
+    active_model_serializers (0.10.14)
+      actionpack (>= 4.1)
+      activemodel (>= 4.1)
+      case_transform (>= 0.2)
+      jsonapi-renderer (>= 0.1.1.beta1, < 0.3)
     activejob (7.0.8.6)
       activesupport (= 7.0.8.6)
       globalid (>= 0.3.6)
@@ -68,16 +73,24 @@ GEM
       tzinfo (~> 2.0)
     base64 (0.2.0)
     bigdecimal (3.1.8)
+    bigdecimal (3.1.8)
     bootsnap (1.18.4)
       msgpack (~> 1.2)
     builder (3.3.0)
+    case_transform (0.2)
+      activesupport
     concurrent-ruby (1.3.4)
     crass (1.0.6)
+    csv (3.3.0)
     csv (3.3.0)
     date (3.3.4)
     debug (1.9.2)
       irb (~> 1.10)
       reline (>= 0.3.8)
+    dotenv (3.1.4)
+    dotenv-rails (3.1.4)
+      dotenv (= 3.1.4)
+      railties (>= 6.1)
     erubi (1.13.0)
     faraday (2.12.0)
       faraday-net_http (>= 2.0, < 3.4)
@@ -91,13 +104,18 @@ GEM
       csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
+    httparty (0.22.0)
+      csv
+      mini_mime (>= 1.0.0)
+      multi_xml (>= 0.5.2)
     i18n (1.14.6)
       concurrent-ruby (~> 1.0)
     io-console (0.7.2)
     irb (1.14.1)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json (2.7.5)
+    json (2.7.6)
+    jsonapi-renderer (0.2.2)
     jwt (2.9.3)
       base64
     logger (1.6.1)
@@ -114,6 +132,8 @@ GEM
     mini_mime (1.1.5)
     minitest (5.25.1)
     msgpack (1.7.3)
+    multi_xml (0.7.1)
+      bigdecimal (~> 3.1)
     multi_xml (0.7.1)
       bigdecimal (~> 3.1)
     net-http (0.4.1)
@@ -195,7 +215,7 @@ GEM
     websocket-driver (0.7.6)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
-    zeitwerk (2.7.1)
+    zeitwerk (2.6.18)
 
 PLATFORMS
   aarch64-linux
@@ -206,17 +226,18 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  active_model_serializers (~> 0.10.0)
   bootsnap
   debug
   httparty
+  dotenv-rails
+  httparty
+  json (~> 2.5)
   pg (~> 1.1)
   puma (~> 5.0)
   rails (~> 7.0.8, >= 7.0.8.5)
   twilio-ruby
   tzinfo-data
-
-RUBY VERSION
-   ruby 3.3.5p100
 
 BUNDLED WITH
    2.5.21
