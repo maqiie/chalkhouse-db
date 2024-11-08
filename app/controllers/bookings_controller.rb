@@ -1,63 +1,115 @@
+
 # class BookingsController < ApplicationController
-#     def create
-#         booking = Booking.new(booking_params)
-#         if booking.save
-#             send_confirmation_message(booking) # Method to send SMS (see below)
-#             render json: booking, status: :created
+#   def create
+#     booking = Booking.new(booking_params)
+#     booking.booking_fee = 50 # Fixed booking fee of 50 Ksh
+
+#     # Convert start_time and end_time to DateTime objects
+#     start_time = DateTime.parse("#{booking.date} #{booking.time}")
+#     end_time = DateTime.parse("#{booking.date} #{booking.end_time}")
+
+#     # Calculate the duration in minutes (difference between start_time and end_time)
+#     duration = ((end_time - start_time) * 24 * 60).to_i # Duration in minutes
+
+#     # Assign the times and duration to the booking object
+#     booking.start_time = start_time
+#     booking.end_time = end_time
+#     booking.duration = duration # Optionally, store duration in the database
+
+#     # Check if the table is available
+#     table = booking.table
+#     if table.available?(start_time, end_time)
+#       # Table is available, save booking
+#       if booking.save
+#         # Initiate payment via Paystack
+#         paystack_service = PaystackService.new
+#         payment_response = paystack_service.initiate_payment(booking)
+
+#         if payment_response['status'] == true && payment_response['data']['authorization_url']
+#           render json: booking, status: :created
 #         else
-#             render json: booking.errors, status: :unprocessable_entity
+#           booking.destroy # Rollback if payment initiation fails
+#           render json: { error: 'Payment initiation failed.', details: payment_response['message'] }, status: :unprocessable_entity
 #         end
-#     end
-
-#     private
-
-#     def booking_params
-#         params.require(:booking).permit(:name, :phone, :date, :time, :guests, :table_id)
-#     end
-#     def mpesa_callback
-#         # This will receive the M-Pesa callback for payment status
-#         # Handle the response accordingly
-#         # For example, you might want to update the booking status here
+#       else
+#         render json: booking.errors, status: :unprocessable_entity
 #       end
-      
-
-#     def send_confirmation_message(booking)
-#         # Logic to send SMS confirmation to booking.phone
-#         # You can use a service like Twilio for sending SMS
+#     else
+#       # Suggest available times when the table is not available
+#       suggested_times = table.suggest_available_times(start_time, end_time)
+#       render json: { error: 'Table is not available at the requested time.',
+#                      suggested_times: suggested_times }, status: :unprocessable_entity
 #     end
+#   end
+
+#   private
+
+#   def booking_params
+#     params.require(:booking).permit(:name, :phone, :date, :time, :end_time, :guests, :table_id)
+#   end
 # end
 class BookingsController < ApplicationController
-    def create
-      booking = Booking.new(booking_params)
-      
-      # Assuming you have a field `booking_fee` in your booking params or defined elsewhere
-      booking.booking_fee = 1000 # Example booking fee, modify as needed
-  
+  def create
+    booking = Booking.new(booking_params)
+    booking.booking_fee = 50 # Fixed booking fee
+    
+    start_time = DateTime.parse("#{booking.date} #{booking.time}")
+    end_time = DateTime.parse("#{booking.date} #{booking.end_time}")
+    
+    duration = ((end_time - start_time) * 24 * 60).to_i
+    booking.start_time = start_time
+    booking.end_time = end_time
+    booking.duration = duration
+    
+    table = Table.find_by(id: booking.table_id)
+
+    # Check if the selected table is available
+    if table && table.available?(start_time, end_time)
       if booking.save
-        mpesa_service = MpesaService.new
-        payment_response = mpesa_service.initiate_payment(booking)
-  
-        if payment_response['ResponseCode'] == '0'
-          send_confirmation_message(booking) # This can send SMS with ticket details
-          render json: { message: 'Booking created and payment initiated.', booking: booking }, status: :created
+        # Table is available, save booking and initiate payment
+        paystack_service = PaystackService.new
+        payment_response = paystack_service.initiate_payment(booking)
+        
+        if payment_response['status'] == true && payment_response['data']['authorization_url']
+          render json: booking, status: :created
         else
-          booking.destroy # Rollback booking if payment initiation fails
-          render json: { error: 'Payment initiation failed.', details: payment_response }, status: :unprocessable_entity
+          booking.destroy
+          render json: { error: 'Payment initiation failed.' }, status: :unprocessable_entity
         end
       else
         render json: booking.errors, status: :unprocessable_entity
       end
-    end
-  
-    private
-  
-    def booking_params
-      params.require(:booking).permit(:name, :phone, :date, :time, :guests, :table_id)
-    end
-  
-    def send_confirmation_message(booking)
-      # Logic to send SMS confirmation to booking.phone
-      # Include details like booking date, time, table details, etc.
+    else
+      # Check for alternative tables if the selected table is not available
+      alternative_table = suggest_alternative_tables(booking, start_time, end_time)
+
+      if alternative_table
+        # Book the alternative table
+        booking.table_id = alternative_table.id
+        if booking.save
+          render json: booking, status: :created
+        else
+          render json: { error: 'Failed to book alternative table.' }, status: :unprocessable_entity
+        end
+      else
+        # No table is available at the requested time, prompt to change time or inform no availability
+        render json: { error: 'No tables are available at the requested time. Please select another time.' }, status: :unprocessable_entity
+      end
     end
   end
-  
+
+  private
+
+  # Remove the reference to capacity in the query
+  def suggest_alternative_tables(booking, start_time, end_time)
+    # Find available tables excluding the selected table
+    available_tables = Table.where("id != ?", booking.table_id)
+                            .select { |table| table.available?(start_time, end_time) }
+
+    available_tables.first # Return the first available table (if any)
+  end
+
+  def booking_params
+    params.require(:booking).permit(:name, :phone, :date, :time, :end_time, :guests, :table_id)
+  end
+end

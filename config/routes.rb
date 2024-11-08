@@ -20,6 +20,17 @@ resources :challenges, only: [:index, :create, :show] do
     post :accept
   end
 end
+resources :bookings, only: [:create, :show, :index] # Adjust actions as needed
+  
+  # Route for payment verification
+  post 'payments/verify', to: 'payments#verify'
+
+
+resources :tables do
+  member do
+    get :show_table_availability
+  end
+end
 
   
   resources :bookings, only: [:create]

@@ -7,6 +7,7 @@ gem 'httparty'
 gem 'active_model_serializers', '~> 0.10.0'
 gem 'dotenv-rails', groups: [:development, :test]
 gem 'json', '~> 2.5'
+gem 'paystack'
 
 
 
