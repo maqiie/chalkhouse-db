@@ -1,60 +1,67 @@
-# app/controllers/challenges_controller.rb
-class ChallengesController < ApplicationController
-    before_action :set_challenge, only: %i[show accept]
-  
-    # GET /challenges
-    def index
-      @challenges = Challenge.all
-      render json: @challenges
-    end
-  
-    # POST /challenges
-    def create
-      @challenge = Challenge.new(challenge_params)
-  
-      if @challenge.save
-        send_sms_notification(@challenge)  # Send SMS notification
-        render json: @challenge, status: :created
-      else
-        render json: @challenge.errors, status: :unprocessable_entity
+class FixturesController < ApplicationController
+  before_action :initialize_service
+
+  def index
+    season = params[:season] || 2023 # Default to the 2023 season if no season is provided
+
+    leagues = {
+      premier_league: 39,        # Premier League ID
+      champions_league: 2,      # Champions League ID
+      la_liga: 140              # La Liga ID
+    }
+
+    @fixtures = leagues.transform_values do |league_id|
+      fixtures = @service.fetch_fixtures(league_id, season)
+
+      # Log the fixtures structure for debugging purposes
+      Rails.logger.debug("Fixtures for league #{league_id}: #{fixtures.inspect}")
+
+      # Safely access the response key and filter upcoming fixtures
+      response = fixtures.is_a?(Hash) ? fixtures["response"] : nil
+
+      if response.nil?
+        Rails.logger.debug("No response for league #{league_id}: #{fixtures.inspect}")
       end
+
+      # Filter and return upcoming fixtures, or empty array if response is nil
+      filter_upcoming_fixtures(response)
     end
-  
-    # GET /challenges/:id
-    def show
-      render json: @challenge
-    end
-  
-    # POST /challenges/:id/accept
-    def accept
-        @challenge = Challenge.find(params[:id])
-        if @challenge.update(accepted: true)
-          render json: @challenge, status: :ok
-        else
-          render json: { error: 'Unable to accept challenge' }, status: :unprocessable_entity
-        end
-      end
-      
-  
-    private
-  
-    def set_challenge
-      @challenge = Challenge.find(params[:id])
-    end
-  
-    def challenge_params
-      params.require(:challenge).permit(:player, :phone, :game, :price)
-    end
-  
-    # Method to send SMS notification
-    def send_sms_notification(challenge)
-      client = Twilio::REST::Client.new(ENV['TWILIO_ACCOUNT_SID'], ENV['TWILIO_AUTH_TOKEN'])
-  
-      client.messages.create(
-        from: ENV['TWILIO_PHONE_NUMBER'],
-        to: challenge.phone,
-        body: "You have created a challenge in #{challenge.game} with a prize of #{challenge.price}. If someone accepts it, you will be notified."
-      )
+
+    render json: @fixtures
+  end
+
+  def premier_league
+    render_league_fixtures(39, params[:season] || 2024)
+  end
+
+  def champions_league
+    render_league_fixtures(2, params[:season] || 2023)
+  end
+
+  def la_liga
+    render_league_fixtures(140, params[:season] || 2023)
+  end
+
+  private
+
+  # Initialize API service
+  def initialize_service
+    @service = ApiFootballService.new
+  end
+
+  # Fetch and render fixtures for a specific league and season
+  def render_league_fixtures(league_id, season)
+    fixtures = @service.fetch_fixtures(league_id, season)
+    @fixtures = filter_upcoming_fixtures(fixtures.dig("response"))
+    render json: @fixtures
+  end
+
+  # Helper method to filter out finished fixtures
+  def filter_upcoming_fixtures(fixtures)
+    return [] unless fixtures.is_a?(Array)
+
+    fixtures.select do |fixture|
+      fixture.dig("fixture", "status", "short") != "FT"
     end
   end
-  
+end

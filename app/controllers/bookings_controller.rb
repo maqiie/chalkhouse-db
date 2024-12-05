@@ -1,53 +1,3 @@
-
-# class BookingsController < ApplicationController
-#   def create
-#     booking = Booking.new(booking_params)
-#     booking.booking_fee = 50 # Fixed booking fee of 50 Ksh
-
-#     # Convert start_time and end_time to DateTime objects
-#     start_time = DateTime.parse("#{booking.date} #{booking.time}")
-#     end_time = DateTime.parse("#{booking.date} #{booking.end_time}")
-
-#     # Calculate the duration in minutes (difference between start_time and end_time)
-#     duration = ((end_time - start_time) * 24 * 60).to_i # Duration in minutes
-
-#     # Assign the times and duration to the booking object
-#     booking.start_time = start_time
-#     booking.end_time = end_time
-#     booking.duration = duration # Optionally, store duration in the database
-
-#     # Check if the table is available
-#     table = booking.table
-#     if table.available?(start_time, end_time)
-#       # Table is available, save booking
-#       if booking.save
-#         # Initiate payment via Paystack
-#         paystack_service = PaystackService.new
-#         payment_response = paystack_service.initiate_payment(booking)
-
-#         if payment_response['status'] == true && payment_response['data']['authorization_url']
-#           render json: booking, status: :created
-#         else
-#           booking.destroy # Rollback if payment initiation fails
-#           render json: { error: 'Payment initiation failed.', details: payment_response['message'] }, status: :unprocessable_entity
-#         end
-#       else
-#         render json: booking.errors, status: :unprocessable_entity
-#       end
-#     else
-#       # Suggest available times when the table is not available
-#       suggested_times = table.suggest_available_times(start_time, end_time)
-#       render json: { error: 'Table is not available at the requested time.',
-#                      suggested_times: suggested_times }, status: :unprocessable_entity
-#     end
-#   end
-
-#   private
-
-#   def booking_params
-#     params.require(:booking).permit(:name, :phone, :date, :time, :end_time, :guests, :table_id)
-#   end
-# end
 class BookingsController < ApplicationController
   def create
     booking = Booking.new(booking_params)
@@ -71,6 +21,7 @@ class BookingsController < ApplicationController
         payment_response = paystack_service.initiate_payment(booking)
         
         if payment_response['status'] == true && payment_response['data']['authorization_url']
+          send_booking_confirmation_sms(booking)
           render json: booking, status: :created
         else
           booking.destroy
@@ -87,6 +38,7 @@ class BookingsController < ApplicationController
         # Book the alternative table
         booking.table_id = alternative_table.id
         if booking.save
+          send_booking_confirmation_sms(booking)
           render json: booking, status: :created
         else
           render json: { error: 'Failed to book alternative table.' }, status: :unprocessable_entity
@@ -100,13 +52,33 @@ class BookingsController < ApplicationController
 
   private
 
-  # Remove the reference to capacity in the query
+  def send_booking_confirmation_sms(booking)
+    ums_service = UmsCommsService.new  # Instantiate without passing parameters
+    
+    # Use the locale string with placeholders for dynamic data
+    message = I18n.t('sms.booking_confirmation', 
+                     name: booking.name, 
+                     date: booking.date, 
+                     time: booking.time.strftime('%I:%M %p'))
+  
+    # Send the SMS
+    response = ums_service.send_sms('UMS_SMS', message, [booking.phone])
+  
+    # Check if the response was successful
+    unless response && response['status'] == true
+      Rails.logger.error("Failed to send SMS via UMSComms: #{response&.dig('message')}")
+    else
+      Rails.logger.info("Booking confirmation SMS sent successfully.")
+    end
+  rescue StandardError => e
+    Rails.logger.error("Failed to send SMS: #{e.message}")
+  end
+
   def suggest_alternative_tables(booking, start_time, end_time)
-    # Find available tables excluding the selected table
     available_tables = Table.where("id != ?", booking.table_id)
                             .select { |table| table.available?(start_time, end_time) }
 
-    available_tables.first # Return the first available table (if any)
+    available_tables.first
   end
 
   def booking_params

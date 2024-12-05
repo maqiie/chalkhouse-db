@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  seat_number: MyString
+  match_id: 1
+  booking_date: 2024-12-03
+  user: one
+
+two:
+  seat_number: MyString
+  match_id: 1
+  booking_date: 2024-12-03
+  user: two

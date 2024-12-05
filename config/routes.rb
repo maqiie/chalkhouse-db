@@ -32,6 +32,17 @@ resources :tables do
   end
 end
 
+
+resources :match_seat_bookings, only: [:index, :create, :destroy]
+ # Fixture routes for each league
+ get '/fixtures/premier_league', to: 'fixtures#premier_league'
+ get '/fixtures/champions_league', to: 'fixtures#champions_league'
+ get '/fixtures/la_liga', to: 'fixtures#la_liga'
+ 
+ # Default route for fetching all leagues' fixtures
+ get '/fixtures', to: 'fixtures#index'
+
+
   
   resources :bookings, only: [:create]
 end
