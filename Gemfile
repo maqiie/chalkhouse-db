@@ -9,6 +9,7 @@ gem 'dotenv-rails', groups: [:development, :test]
 gem 'json', '~> 2.5'
 gem 'paystack'
 gem 'rack-cors'
+gem 'kaminari'
 
 
 
